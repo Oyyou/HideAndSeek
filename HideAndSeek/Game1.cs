@@ -1,11 +1,12 @@
-﻿using Game1.Sprites;
+﻿using HideAndSeek.Sprites;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Penumbra;
 using System.Collections.Generic;
+using System.Linq;
 
-namespace Game1
+namespace HideAndSeek
 {
   /// <summary>
   /// This is the main type for your game.
@@ -106,17 +107,7 @@ namespace Game1
         if (sprite is Door)
           continue;
 
-        var hull = new Hull(
-          new Vector2(-25f, -25f),
-          new Vector2(+25f, -25f),
-          new Vector2(+25f, +25f),
-          new Vector2(-25f, +25f))
-        {
-          Enabled = true,
-          //Origin = sprite.Origin,
-          Position = sprite.Position,
-          Scale = new Vector2(1.0f),
-        };
+        Hull hull = GetHull(sprite);
 
         _penumbra.Hulls.Add(hull);
       }
@@ -128,6 +119,20 @@ namespace Game1
       };
 
       _penumbra.Lights.Add(_playerLight);
+    }
+
+    private static Hull GetHull(Sprite sprite)
+    {
+      return new Hull(
+        new Vector2(-25f, -25f),
+        new Vector2(+25f, -25f),
+        new Vector2(+25f, +25f),
+        new Vector2(-25f, +25f))
+      {
+        Enabled = true,
+        Position = sprite.Position,
+        Scale = new Vector2(1.0f),
+      };
     }
 
     /// <summary>
@@ -173,7 +178,34 @@ namespace Game1
       }
 
       foreach (var sprite in _sprites)
+      {
+        // TODO: Have a list of hulls inside the Sprite.cs
+        if (sprite is Door)
+        {
+          var door = sprite as Door;
+
+          var hull = GetHull(door.ActualDoor);
+
+          if (door.ActualDoor.IsVisible)
+          {
+            if (_penumbra.Hulls.All(c => !c.IsSame(hull)))
+              _penumbra.Hulls.Add(hull);
+          }
+          else
+          {
+            var newHull = _penumbra.Hulls.SingleOrDefault(c => c.IsSame(hull));
+            if (newHull != null)
+            {
+              _penumbra.Hulls.Remove(newHull);
+
+              // Due to a way penumbra works, I have to do a "forced" movement on any light sorce to make it update
+              _penumbra.Lights[0].Position += new Vector2(0.001f, 0);
+            }
+          }
+
+        }
         sprite.PostUpdate(gameTime);
+      }
 
       _playerLight.Position = _sprites[0].Position;
     }

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Game1.Sprites
+namespace HideAndSeek.Sprites
 {
   public class Sprite
   {
