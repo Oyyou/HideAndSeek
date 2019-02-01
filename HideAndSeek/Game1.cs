@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Penumbra;
 using System.Collections.Generic;
 
 namespace Game1
@@ -14,12 +15,21 @@ namespace Game1
     GraphicsDeviceManager graphics;
     SpriteBatch spriteBatch;
 
+    private PenumbraComponent _penumbra;
+
+    private Light _playerLight;
+
     private List<Sprite> _sprites;
 
     public Game1()
     {
       graphics = new GraphicsDeviceManager(this);
       Content.RootDirectory = "Content";
+
+      _penumbra = new PenumbraComponent(this);
+      //_penumbra.SpriteBatchTransformEnabled = false;
+
+      this.Components.Add(_penumbra);
     }
 
     /// <summary>
@@ -87,6 +97,37 @@ namespace Game1
           Position = new Vector2(175, 175),
         },
       };
+
+      foreach (var sprite in _sprites)
+      {
+        if (sprite is Player)
+          continue;
+
+        if (sprite is Door)
+          continue;
+
+        var hull = new Hull(
+          new Vector2(-25f, -25f),
+          new Vector2(+25f, -25f),
+          new Vector2(+25f, +25f),
+          new Vector2(-25f, +25f))
+        {
+          Enabled = true,
+          //Origin = sprite.Origin,
+          Position = sprite.Position,
+          Scale = new Vector2(1.0f),
+        };
+
+        _penumbra.Hulls.Add(hull);
+      }
+
+      _playerLight = new PointLight()
+      {
+        Radius = 5,
+        Scale = new Vector2(350),
+      };
+
+      _penumbra.Lights.Add(_playerLight);
     }
 
     /// <summary>
@@ -133,6 +174,8 @@ namespace Game1
 
       foreach (var sprite in _sprites)
         sprite.PostUpdate(gameTime);
+
+      _playerLight.Position = _sprites[0].Position;
     }
 
     /// <summary>
@@ -141,6 +184,8 @@ namespace Game1
     /// <param name="gameTime">Provides a snapshot of timing values.</param>
     protected override void Draw(GameTime gameTime)
     {
+      _penumbra.BeginDraw();
+
       GraphicsDevice.Clear(Color.CornflowerBlue);
 
       spriteBatch.Begin();
